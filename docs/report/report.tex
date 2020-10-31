@@ -1,0 +1,59 @@
+\documentclass[10pt,twocolumn]{article}
+
+% formatting
+\paperwidth=8.5in
+\paperheight=11in
+\setlength{\columnsep}{0.25in}
+\usepackage{leading}
+\usepackage[margin=0.5in]{geometry}
+
+\usepackage{times}
+\usepackage{listings, textcomp}
+\usepackage[T1]{fontenc}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{breaklinks=true}
+\Urlmuskip=0mu plus 2mu
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{flushend}
+
+\newcommand{\remark}[1]{{\color{red}[#1]}}
+
+\makeatletter
+\setlength{\@fptop}{0pt}
+\makeatother
+
+\begin{document}
+
+\leading{11pt}
+
+\title{\bf Contextual Code Completion Using Machine Learning}
+\author{Subhasis Das, Chinmayee Shah\\
+        \{subhasis,~chshah\}@stanford.edu\\
+        Mentor: Junjie Qin}
+
+\date{}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+\input{intro}
+\input{related}
+\input{dataset}
+\input{model}
+\input{methods}
+\input{results}
+\input{examples}
+\input{conclusions}
+
+\bibliography{report}
+\bibliographystyle{abbrv} 
+
+\end{document}

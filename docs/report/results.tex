@@ -1,0 +1,115 @@
+%\vspace{-5pt}
+\section{Experiments and Results}
+\label{sec:results}
+
+In this section, we evaluate the methods outlined in Section~\ref{sec:methods},
+on Linux kernel and Twisted library. We first present the accuracy of
+predictions on the test set, and then present some interesting predictions that
+come out from recurring patterns. We implemented the matrix vector model in
+Python, and the feed-forward and recurrent models in Keras~\cite{ref:keras}.
+Our code is available on github~\cite{ref:codecompletion}.
+
+\subsection{Accuracy}
+\label{sec:accuracy}
+
+\begin{table}[h]
+  \centering
+%  \small {
+  \begin{tabular}{l l l r r r r r}
+    \hline
+    Method & Known & Abs & Top 3 & Key & Pos \\
+    Win, \#Keys & acc. & acc. & acc.  & acc. & acc. \\
+    \hline
+    NL-3, 40, 2000 & 64.4 & 53.4 & 81.7 & 78.0 & 43.7\\
+    NL-4, 64, 2000 & 63.2 & 50.6 & 82.0 & 72.8 & 41.8\\
+    Attn, 40, 1000 & 67.5 & 56.0 & 83.6 & 79.9 & 48.4\\
+    BestKW-RandPos & 49.8 & 41.3 & -- & 79.9 & 7.0\\
+    \hline
+  \end{tabular}
+%  }
+  \caption{Test accuracy (\%) of predictions for Linux project}
+  \label{tab:linux}
+\end{table}
+
+\begin{table}[h]
+  \centering
+%  \normal {
+  \begin{tabular}{l l l r r r r r}
+    \hline
+    Method & Known & Abs & Top 3 & Key & Pos \\
+    Win, \#Keys & acc. & acc. & acc.  & acc. & acc. \\
+    \hline
+    NL-3, 40, 500 & 46.3 & 39.2 & 64.8 & 64.1 & 14.2\\
+    NL-4, 40, 500 & 44.8 & 37.7 & 62.2 & 63.9 & 10.8\\
+    Attn, 40, 500 & 47.9 & 40.6 & 66.5 & 64.6 & 17.6\\
+    GRU, 40, 500 & 41.6 & 35.2 & 59.1 & 64.4 & 4.9\\
+    BestKW-RandPos & 43.6 & 37.5 & -- & 64.4 & 5.5\\
+    \hline
+  \end{tabular}
+%  }
+  \caption{Test accuracy (\%) of predictions for Twisted project}
+  \label{tab:twisted}
+\end{table}
+
+\noindent
+Table~\ref{tab:linux} shows results for Linux source, a C project, and
+Table~\ref{tab:twisted} for Twisted, a Python networking library. As mentioned
+in Section~\ref{sec:dataset}, we use half the files for training and half for
+testing.
+Column 1
+lists the learning method, window size and number of key words.
+NL-3 is a feed forward model with 3 non-linearity layers, and NL-4 is a feed
+forward model with 4 non-linearity layers. Attn. computes a weighing
+parameter for each input token in the window, and uses 3 non-linearity layers.
+GRU is a recurrent model. We do not report numbers for GRU in the Linux codebase
+since it gave poor results in the smaller Twisted codebase.
+Additionally, we report numbers for a fictional random
+predictor that achieves the accuracy of the best predictor in case of keywords,
+but in case of a non-keyword token predicts one randomly from the non-keyword
+tokens in the window, to show the significance of positional tokens.
+We name this BestKW-RandPos.
+
+Known acc. is the
+accuracy for predictions for the cases where the next token is a key token, or
+a positional token from the window being considered. Abs acc. is the accuracy
+for predictions for all cases, including cases where the next token is
+neither a key word nor a seen positional token. These are often new function
+names or variable names, or variables outside of our window. Top 3 is the
+percentage of cases where the next token is within top 3 predictions, ignoring
+the unknown cases (unseen variable and function names).
+We report this number, because generally, we are interested in the top few
+suggestions as opposed to the top suggestion with a code recommendation system.
+Key acc. is the
+accuracy with which we predict key tokens correctly, given the next token is a
+key token,
+and pos. acc. is the accuracy with which we predict positional tokens
+correctly, given the next token is a positional token.
+These give us insight into how well our methods predict tokens that are not key
+tokens.
+
+We found that attention gives the best results among all the methods we tried.
+This makes sense because it is also the most general of all models --- it
+directly connects all inputs to the output, (unlike GRU where computed states
+are chained), and it has an additional attention parameter, that is just a
+constant in the simple feed-forward case. We also found that the feed forward
+model with 4 non-linearity layers tends to overfit the training data, giving a slightly
+lower accuracy on test data. Increasing the word vector dimensions also tends
+to result in overfitting. Though regularization can help with overfitting, we
+found that reducing vector dimensions and number of layers was also sufficient
+to reduce high variance from overfitting.
+
+The accuracy of predicting non-key words, that is, positional tokens is quite
+high for Linux kernel, a C project, indicating there is a lot of redundancy/
+recurring patterns. The positional token accuracy is lower for Python.
+We think this is because Python is a dynamically typed, high level
+language with less redundancy, and more terse syntax.
+However, in both cases, the top 3 prediction
+accuracy is still much higher than a random predictor, indicating that the
+model does extract some patterns out of the code.
+
+A plot of the word vectors reveals a significant clustering of similar
+words --- {\texttt {uint8\_t}} and {\texttt {uint16\_t}}, different locking and
+unlocking calls, and integers. We have omitted these plots from the report for
+space. Unlike natural language texts, however,
+we did not observe any significant vector relationships between different
+tokens.
