@@ -17,13 +17,15 @@ from tensorflow.keras.layers import LSTM, GRU
 from tensorflow.keras.layers import Dense, Flatten, RepeatVector, Reshape, Permute
 from tensorflow.keras.layers import Convolution1D
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.models import Sequential #Graph
+from tensorflow.keras.models import Sequential  # Graph
 from tensorflow.keras.models import model_from_json
+
 
 class RnnLSTM(GenericRNNModel):
     """
     The actual impl here
     """
+
     def __init__(self, keywords, winSize=100, wdim=32, zdim=1024, reg=0.,
                  lstm_activation='tanh', lstm_inner_activation='hard_sigmoid',
                  output_activation='softmax',
@@ -49,15 +51,17 @@ class RnnLSTM(GenericRNNModel):
             self.model.add(Embedding(vocab_size, wdim, input_length=winSize))
             # LSTM
             self.model.add(GRU(zdim,
-#                               activation=lstm_activation,
-#                               inner_activation=lstm_inner_activation,
+                               #                               activation=lstm_activation,
+                               #                               inner_activation=lstm_inner_activation,
                                input_length=winSize))
             # determine output of RNN model
             self.model.add(Dense(vocab_size, activation=output_activation,
-                                 W_regularizer=l2(reg)))
+                                 ))
             # compile with optimizer, loss function
-            self.model.compile(optimizer=loss_optimizer,
-                               loss='categorical_crossentropy', class_mode='categorical')
+            # self.model.compile(optimizer=loss_optimizer,
+            #                    loss='categorical_crossentropy', class_mode='categorical')
+
+            self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     def restoreFrom(self, savedFilePrefix):
         """
@@ -74,7 +78,7 @@ class RnnLSTM(GenericRNNModel):
         savedFile: filename to which to save the current model
         """
         # try pickle if this doesn't work 
-        pkl.dump(self.params, open(savedFilePrefix + "_params", 'w'))
+        pkl.dump(self.params, open(savedFilePrefix + "_params", 'wb'))
         with open(savedFilePrefix + "_model", 'w') as fp:
             fp.write(self.model.to_json())
         self.model.save_weights(savedFilePrefix + "_weights", overwrite=True)
@@ -90,15 +94,17 @@ class RnnLSTM(GenericRNNModel):
         ys_labels = np.zeros((B, self.params["vocab_size"]),
                              dtype=np.int)
         ys_labels[np.arange(B), ys] = 1
-        return self.model.train_on_batch(Xs, ys_labels, accuracy=True)
+        return self.model.train_on_batch(Xs, ys_labels)
 
     def score(self, Xs):
         return self.model.predict(Xs)
+
 
 class RnnDense(GenericRNNModel):
     """
     The actual impl here
     """
+
     def __init__(self, keywords, winSize=100, wdim=32, zdim=1024, reg=0.,
                  lstm_activation='tanh', lstm_inner_activation='hard_sigmoid',
                  output_activation='softmax',
@@ -165,10 +171,12 @@ class RnnDense(GenericRNNModel):
     def score(self, Xs):
         return self.model.predict(Xs)
 
+
 class RnnDense2(GenericRNNModel):
     """
     The actual impl here
     """
+
     def __init__(self, keywords, winSize=100, wdim=32, zdim=1024, zdim2=1024, reg=0.,
                  lstm_activation='tanh', lstm_inner_activation='hard_sigmoid',
                  output_activation='softmax',
@@ -236,10 +244,12 @@ class RnnDense2(GenericRNNModel):
     def score(self, Xs):
         return self.model.predict(Xs)
 
+
 class RnnAttentionDense2(GenericRNNModel):
     """
     The actual impl here
     """
+
     def __init__(self, keywords, winSize=100, wdim=32, zdim=1024, zdim2=1024, reg=0.,
                  lstm_activation='tanh', lstm_inner_activation='hard_sigmoid',
                  output_activation='softmax',
@@ -257,7 +267,7 @@ class RnnAttentionDense2(GenericRNNModel):
         self.params["vocab_size"] = vocab_size
 
         # initialize keras model
-        self.model = Graph()
+        self.model = Sequential()
         # convert words to dense vectors
         self.model.add_input(name='word', input_shape=(winSize,), dtype='int')
         self.model.add_node(Embedding(vocab_size, wdim, input_length=winSize),
@@ -269,7 +279,7 @@ class RnnAttentionDense2(GenericRNNModel):
                             name='attn', input='wvecf')
         self.model.add_node(RepeatVector(wdim),
                             name='attnr', input='attn')
-        self.model.add_node(Permute(dims=(2,1)),
+        self.model.add_node(Permute(dims=(2, 1)),
                             name='attnp', input='attnr')
         # multiply word vector by attention and flatten output
         self.model.add_node(Flatten(), name='awvecf', inputs=['wvec', 'attnp'], merge_mode='mul')
@@ -296,7 +306,6 @@ class RnnAttentionDense2(GenericRNNModel):
                                         self.model.nodes['attn'].get_output(train=False),
                                         on_unused_input='ignore')
 
-
     def restoreFrom(self, savedFilePrefix):
         """
         savedFile: filename from which to read parameters
@@ -308,7 +317,7 @@ class RnnAttentionDense2(GenericRNNModel):
         self.model.load_weights(savedFilePrefix + "_weights")
 
         # also compile a function for getting the attention vector
-        print ([self.model.inputs[i].input for i in self.model.input_order])
+        print([self.model.inputs[i].input for i in self.model.input_order])
         self.get_attn = theano.function([self.model.inputs[i].input for i in
                                          self.model.input_order],
                                         self.model.nodes['attn'].get_output(train=False),
@@ -350,10 +359,12 @@ class RnnAttentionDense2(GenericRNNModel):
         attn = self.get_attn(Xs.astype(np.int32))
         return attn
 
+
 class RnnConvDense(GenericRNNModel):
     """
     The actual impl here
     """
+
     def __init__(self, keywords, winSize=100, wdim=32, kSize=7, convdim=64, zdim=1024, reg=0.,
                  lstm_activation='tanh', lstm_inner_activation='hard_sigmoid',
                  output_activation='softmax',
@@ -379,7 +390,7 @@ class RnnConvDense(GenericRNNModel):
         # flatten
         self.model.add(Flatten())
         self.model.add(Dense(zdim, activation='relu', W_regularizer=l2(reg)))
-#        self.model.add(Dense(zdim2, activation='relu', W_regularizer=l2(reg)))
+        #        self.model.add(Dense(zdim2, activation='relu', W_regularizer=l2(reg)))
         self.model.add(Dense(vocab_size, activation=output_activation,
                              W_regularizer=l2(reg)))
         # compile with optimizer, loss function
@@ -422,6 +433,7 @@ class RnnConvDense(GenericRNNModel):
     def score(self, Xs):
         return self.model.predict(Xs)
 
+
 class GenericKerasModel(GenericRNNModel):
     def __init__(self, keywords, winSize=100):
         """
@@ -445,6 +457,7 @@ class GenericKerasModel(GenericRNNModel):
         else:
             return self.model.predict(Xs)
 
+
 class EnsembleModel(GenericRNNModel):
     def __init__(self, keywords, winSize=100):
         """
@@ -467,4 +480,3 @@ class EnsembleModel(GenericRNNModel):
 
     def attention(self, Xs):
         return np.mean([model.attention(Xs) for model in self.models], axis=0)
-

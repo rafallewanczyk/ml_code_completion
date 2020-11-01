@@ -85,10 +85,11 @@ if __name__ == '__main__':
     if args.command == 'test':
         model = EnsembleModel(keywords, winSize=args.win)
     else:
-        model = RnnAttentionDense2(keywords, winSize=args.win,
-                                   wdim=args.dim, zdim=args.zdim, zdim2=args.zdim2,
-                                   reg=args.reg,
-                                   load_from_file=False)
+        # model = RnnAttentionDense2(keywords, winSize=args.win,
+        #                            wdim=args.dim, zdim=args.zdim, zdim2=args.zdim2,
+        #                            reg=args.reg,
+        #                            load_from_file=False)
+        model = RnnLSTM(keywords, load_from_file=False, winSize=10)
 
     if args.restore is not None:
         model.restoreFrom(args.restore)
@@ -103,17 +104,19 @@ if __name__ == '__main__':
     robj.shuffle(files)
 
     if args.command == 'train':
-        fileSubset = files[:len(files) / 2]
+        fileSubset = files[:int(len(files) / 2)]
     elif args.command == 'test':
-        fileSubset = files[len(files) / 2:]
+        fileSubset = files[int(len(files) / 2):]
     else:
-        fileSubset = files[len(files) / 2:]
+        fileSubset = files[int(len(files) / 2):]
 
     if args.command == 'train' or args.command == 'test':
         for i, name in enumerate(fileSubset):
-            if i % 1000 == 0:
-                print('%d files done' % i)
-            filesAndTokens.append((name, utils.tokenize(name)))
+            print('%d files done' % i)
+            try:
+                filesAndTokens.append((name, utils.tokenize(name)))
+            except UnicodeDecodeError:
+                continue
         print(len(filesAndTokens))
         print(sum([len(tokens) for name, tokens in filesAndTokens]))
 

@@ -18,7 +18,7 @@ class GenericRNNModel(Model):
     etc.) is the job of the concrete implementation
     """
 
-    def __init__(self, keywords, winSize=100):
+    def __init__(self, keywords, winSize=10):
         """
         @keywords: same as Model
         @winSize: length of window to consider for each word
